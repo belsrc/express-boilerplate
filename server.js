@@ -21,6 +21,7 @@ var mongoose = require('mongoose');
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var log4js = require('log4js');
+var path = require('path');
 
 
 /*
@@ -85,14 +86,25 @@ mongoConnect();
 
 /*
  |--------------------------------------------------------------------------
- | Load Mongoose Models
+ | Recursively Load Mongoose Models
  |--------------------------------------------------------------------------
  */
-fs.readdirSync('./app/models').forEach(function(file) {
-  if(~file.indexOf('.js')) {
-    require('./app/models/' + file);
-  }
-});
+var loadModels = function(dir) {
+  fs.readdirSync(dir).forEach(function(file) {
+    var full = path.join(dir, file);
+    var stat = fs.statSync(full);
+    if(stat && stat.isDirectory()) {
+      loadModels(full);
+    }
+    else {
+      if(~file.indexOf('.js')) {
+        require(full);
+      }
+    }
+  });
+};
+
+loadModels(path.join(__base, 'app/models'));
 
 
 /*
