@@ -46,7 +46,7 @@ var config = require('./config')[env];
  | Load Logger
  |--------------------------------------------------------------------------
  */
-log4js.configure('./config/log4js.json')
+log4js.configure('./config/log4js.json');
 var log = log4js.getLogger('app');
 
 
@@ -117,14 +117,25 @@ require('./config/express')(app, config);
 
 /*
  |--------------------------------------------------------------------------
- | Bootstrap application routes
+ | Recursively Load Routes
  |--------------------------------------------------------------------------
  */
-fs.readdirSync('./app/routes').forEach(function(file) {
-  if(~file.indexOf('.js')) {
-    require('./app/routes/' + file)(app, io);
-  }
-});
+var loadRoutes = function(dir) {
+  fs.readdirSync(dir).forEach(function(file) {
+    var full = path.join(dir, file);
+    var stat = fs.statSync(full);
+    if(stat && stat.isDirectory()) {
+      loadRoutes(full);
+    }
+    else {
+      if(~file.indexOf('.js')) {
+        require(full)(app);
+      }
+    }
+  });
+};
+
+loadRoutes(path.join(__base, 'app/routes'));
 
 
 /*
